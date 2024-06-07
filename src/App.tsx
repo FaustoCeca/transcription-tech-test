@@ -1,6 +1,6 @@
 import transcript from './data/transcript.json';
 import audio from './data/audio.wav';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 type Message = {
   content: string;
@@ -11,18 +11,20 @@ type Message = {
 
 const App = () => {
   const [currentTime, setCurrentTime] = useState(0);
-
+  const audioRef = useRef<HTMLAudioElement>(null);
+  
   useEffect(() => {
-    const audioElement = document.querySelector('audio') as HTMLAudioElement;
-    audioElement.addEventListener('timeupdate', () => {
-      setCurrentTime(audioElement.currentTime);
-    });
+    if (audioRef.current === null) return;
+    audioRef.current.addEventListener('timeupdate', () => {
+      setCurrentTime(audioRef.current?.currentTime || 0);
+    })
   }, []);
 
   const setMessageTime = (time: number) => {
-    const audioElement = document.querySelector('audio') as HTMLAudioElement;
-    audioElement.currentTime = time;
-    audioElement.play();
+    if (audioRef.current === null) return;
+
+    audioRef.current.currentTime = time;
+    audioRef.current?.play();
   }
 
   return (
@@ -34,9 +36,9 @@ const App = () => {
           <div
             key={message.start}
             onClick={() => setMessageTime(message.start)}
-            className={`flex p-2 mx-16 rounded-lg bg-opacity-50 cursor-pointer
+            className={`flex p-2 mx-16 rounded-lg bg-opacity-30 cursor-pointer
               ${message.role === 'user' ? 'bg-blue-500 items-start ml-4' : 'bg-green-500 mr-4 items-end'}
-              ${currentTime >= message.start && currentTime <= message.end ? 'bg-opacity-100' : ''}
+              ${currentTime >= message.start && currentTime < message.end ? '!bg-opacity-100' : ''}
             `}
           >
             {message.content}
@@ -45,6 +47,7 @@ const App = () => {
       }
 
       <audio
+        ref={audioRef}
         className="fixed bottom-0 w-full"
         src={audio}
         controls
